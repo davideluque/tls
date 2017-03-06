@@ -14,9 +14,9 @@
 #include <string.h>
 #include <pthread.h>
 
-/*	
- * Estructura que almacena las opciones introducidas por el usuario al invocar
- * el programa en la línea de comandos.
+/*
+ * Estructura que almacena las opciones de ejecución del programa, i.e. número
+ * de hilos, directorio y nombre del archivo de salida.
  *
 */
 typedef struct Options{
@@ -27,9 +27,16 @@ typedef struct Options{
 
 /*	
  * Ejecuta pager localizado en /usr/bin/ para visualizar el manual del programa
+ * que contiene información acerca de la sintaxis, descripción de párametros, etc.
  *
 */
 void help(void);
+
+/*	
+ * Se ejecuta cuando se invoca el programa con un comando inválido.
+ *
+*/
+void usage(void);
 
 /*	
  * Inicializa la estructura que almacena las opciones introducidas al invocar
@@ -39,14 +46,7 @@ void help(void);
 void init_options(Options *opt);
 
 /*	
- * Muestra en pantalla un mensaje de ayuda acerca de la sintaxis, descripción de
- * párametros, etc. y termina.
- *
-*/
-void usage(void);
-
-/*	
- * Analiza la sintaxis de la invocación.
+ * Analiza la sintaxis de la invocación del programa mediante la línea de comandos.
  *	
 */
-void parseArgs(int argc, char *argv[]);
+void parseArgs(Options *options, int argc, char *argv[]);

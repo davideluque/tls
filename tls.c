@@ -26,14 +26,10 @@ void init_options(Options *opt){
 	strcpy(opt->out, "salida");
 }
 
-void parseArgs(int argc, char *argv[]){
+void parseArgs(Options *options, int argc, char *argv[]){
 	
 	int ch;
 	int index;
-
-	Options *options = (Options *) malloc(sizeof(Options));
-
-	init_options(options);
 
 	while( (ch = getopt(argc, argv, "hn:d:")) != -1)
 		switch(ch){
@@ -59,7 +55,6 @@ void parseArgs(int argc, char *argv[]){
 	printf("directorio: %s\n", options->directory);
 	printf("salida: %s\n", options->out);
 
-
 	//for (index = optind; index < argc; index++)
 	//  	printf("Argumento opcional %s\n", argv[index]);
 
@@ -69,6 +64,19 @@ void parseArgs(int argc, char *argv[]){
 
 int main(int argc, char *argv[])
 {
-	parseArgs(argc, argv);
+
+	/*
+	 * Por defecto los valores de las opciones son inicializados mediante la 
+	 * función init_options con 1, directorio de trabajo actual y "salida" 
+	 * respectivamente.
+	 *
+	*/
+	Options *options = (Options *) malloc(sizeof(Options));
+	init_options(options);
+
+	parseArgs(options, argc, argv);
+
+
+
 	return 0;
 }
