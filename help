@@ -1,0 +1,12 @@
+TLS
+
+NAME
+	tls — Thread list client
+
+SYNOPSIS
+	tls [-h] | [-n i] [-d directorio] [ salida ]
+
+DESCRIPCIÓN
+	tls es un programa que utiliza hilos para recorrer recursivamente un árbol de
+	directorios, generando un reporte con la información más importante para cada
+	directorio en el árbol.
