@@ -3,10 +3,18 @@ TLS
 NAME
 	tls — Thread list client
 
-SYNOPSIS
+SINOPSIS
 	tls [-h] | [-n i] [-d directorio] [ salida ]
 
 DESCRIPCIÓN
 	tls es un programa que utiliza hilos para recorrer recursivamente un árbol de
 	directorios, generando un reporte con la información más importante para cada
 	directorio en el árbol.
+
+OPCIONES
+	-h 		Muestra por pantalla un mensaje de ayuda (sintaxis, descripción de 
+			parámetros, etc.)
+
+	-n 		Nivel de concurrencia solicitado
+
+	-d		Especifica un directorio desde donde revisa el espacio utilizado.
