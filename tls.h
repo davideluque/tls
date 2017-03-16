@@ -8,12 +8,6 @@
  * Caracas, Venezuela
 */
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-
 /*
  * Estructura que almacena las opciones de ejecución del programa, i.e. número
  * de hilos, directorio y nombre del archivo de salida.
@@ -24,6 +18,31 @@ typedef struct Options{
 	char directory[4096];
 	char out[256];
 } Options;
+
+/*
+ * Estructura para la lista de directorios a ser explorados. Almacena el nombre 
+ * del directorio, un apuntador al directorio anterior y uno al siguiente.
+ *
+*/
+typedef struct element{
+	char* name;
+	struct element *prev;
+	struct element *next;
+
+} Element;
+
+/*
+ * Implementación de una lista. Esta es la lista de directorios a ser explorados
+ * por los hilos trabajadores. Almacena el primer elemento, el último y su tamaño.
+ *
+*/
+typedef struct lista{
+	
+	Element *first;
+	Element *last;
+	int size;
+
+} List;
 
 /*	
  * Ejecuta pager localizado en /usr/bin/ para visualizar el manual del programa
@@ -50,3 +69,11 @@ void init_options(Options *opt);
  *	
 */
 void parseArgs(Options *options, int argc, char *argv[]);
+
+
+/*	
+ * Función que ejecuta el hilo principal o maestro para explorar el directorio
+ * pasado mediante la línea de comandos.
+ *	
+*/
+void explore(char* directory);
