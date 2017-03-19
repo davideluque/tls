@@ -19,6 +19,7 @@ void help(void){
 
 void usage(void){
 	printf("uso: tls [-h] | [-n i] [-d directorio] [salida]\n");
+	printf("ejecute tls -h para mayor información\n");
 	exit(0);
 }
 
@@ -38,8 +39,7 @@ void parseArgs(Options *options, int argc, char *argv[]){
 			case 'h': 
 				help();
 			case 'n':
-				// Verificar que el argumento sea válido (un número) o enviar a
-				// usage.
+				if (!isdigit(optarg[0])) usage();
 				options->concurrency = atoi(optarg);
 				break;
 			case 'd':

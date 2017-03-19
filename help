@@ -15,6 +15,7 @@ OPCIONES
 	-h 		Muestra por pantalla un mensaje de ayuda (sintaxis, descripción de 
 			parámetros, etc.)
 
-	-n 		Nivel de concurrencia solicitado
+	-n 		Nivel de concurrencia solicitado. Debe ser un entero. Ejemplo: -n 5
 
 	-d		Especifica un directorio desde donde revisa el espacio utilizado.
+			Ejemplo: -d path/directorio/hola/
