@@ -15,11 +15,11 @@
 */
 void init_element(Element *e, char* dname);
 
-/*
+/*	
  * Inicializa la lista de directorios a ser explorados.
  *
 */
-void init_lista(List *l);
+void init_list(List *l);
 
 /*
  * Función para añadir un elemento que contiene el directorio a ser explorado a

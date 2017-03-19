@@ -15,7 +15,7 @@ void init_element(Element *e, char* dname){
 	e->next = NULL;
 }
 
-void init_lista(List *l){
+void init_list(List *l){
 	l->first = NULL;
 	l->last = NULL;
 	l->size = 0;
@@ -37,5 +37,4 @@ void add(List *l, char* dname){
 	}
 
 	l->size++;
-
 }
