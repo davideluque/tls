@@ -138,9 +138,9 @@ int main(int argc, char *argv[])
 
 	List *list = (List *) malloc(sizeof(List));
 
-	explore(inargs->directory, list);
+	explore(in->directory, list);
 
-	createThreads(inargs->concurrency);
+	createThreads(in->concurrency);
 
 	return 0;
 }
