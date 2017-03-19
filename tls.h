@@ -9,15 +9,15 @@
 */
 
 /*
- * Estructura que almacena las opciones de ejecución del programa, i.e. número
+ * Estructura que almacena los argumentos de ejecución del programa, i.e. número
  * de hilos, directorio y nombre del archivo de salida.
  *
 */
-typedef struct Options{
+typedef struct inargs{
 	int concurrency;
 	char directory[4096];
 	char out[256];
-} Options;
+} Inargs;
 
 /*
  * Estructura para la lista de directorios a ser explorados. Almacena el nombre 
@@ -36,7 +36,7 @@ typedef struct element{
  * por los hilos trabajadores. Almacena el primer elemento, el último y su tamaño.
  *
 */
-typedef struct lista{
+typedef struct list{
 	
 	Element *first;
 	Element *last;
@@ -58,17 +58,17 @@ void help(void);
 void usage(void);
 
 /*	
- * Inicializa la estructura que almacena las opciones introducidas al invocar
- * el programa.
+ * Inicializa la estructura que almacenará los argumentos introducidos al invocar 
+ * el programa con valores por defecto .
  *
 */
-void init_options(Options *opt);
+void init_inputargs(Inargs *in);
 
 /*	
  * Analiza la sintaxis de la invocación del programa mediante la línea de comandos.
  *	
 */
-void parseArgs(Options *options, int argc, char *argv[]);
+void parseArgs(Inargs *in, int argc, char *argv[]);
 
 
 /*	
@@ -76,4 +76,4 @@ void parseArgs(Options *options, int argc, char *argv[]);
  * pasado mediante la línea de comandos.
  *	
 */
-void explore(char* directory);
+void explore(char* directory, List *list);

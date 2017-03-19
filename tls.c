@@ -23,13 +23,13 @@ void usage(void){
 	exit(0);
 }
 
-void init_options(Options *opt){
-	opt->concurrency = 1;
-	getcwd(opt->directory, 4096);
-	strcpy(opt->out, "salida");
+void init_inputargs(Inargs *in){
+	in->concurrency = 1;
+	getcwd(in->directory, 4096);
+	strcpy(in->out, "salida");
 }
 
-void parseArgs(Options *options, int argc, char *argv[]){
+void parseArgs(Inargs *in, int argc, char *argv[]){
 	
 	int ch;
 	int index;
@@ -40,10 +40,10 @@ void parseArgs(Options *options, int argc, char *argv[]){
 				help();
 			case 'n':
 				if (!isdigit(optarg[0])) usage();
-				options->concurrency = atoi(optarg);
+				in->concurrency = atoi(optarg);
 				break;
 			case 'd':
-				strcpy(options->directory, optarg);
+				strcpy(in->directory, optarg);
 				break;
 			case '?':
 				usage();
@@ -51,7 +51,7 @@ void parseArgs(Options *options, int argc, char *argv[]){
 				usage();
 		}
 
-	if(optind < argc) strcpy(options->out, argv[optind]);
+	if(optind < argc) strcpy(in->out, argv[optind]);
 
 	return;
 
@@ -91,10 +91,9 @@ void createThreads(int NUM_THREADS){
 	{
 	    pthread_join(threads[i], NULL);
 	}
-
 }
 
-void explore(char *directory){
+void explore(char *directory, List *list){
 
 	DIR *dp;
 	struct dirent *ep;
@@ -105,8 +104,6 @@ void explore(char *directory){
 		perror("No fue posible abrir el directorio\n");
 		exit(-1);
 	}
-
-	List *to_explore = (List *) malloc(sizeof(List));
 
 	while((ep = readdir(dp)) != NULL){	
 
@@ -120,10 +117,9 @@ void explore(char *directory){
 				exit(-1);
 			}
 
-			if(S_ISDIR(statbuffer.st_mode)) add(to_explore, ep->d_name);
+			if(S_ISDIR(statbuffer.st_mode)) add(list, ep->d_name);
 		}
 	}
-
 }
 
 int main(int argc, char *argv[])
@@ -131,18 +127,20 @@ int main(int argc, char *argv[])
 
 	/*
 	 * Por defecto los valores de las opciones son inicializados mediante la 
-	 * función init_options con 1, directorio de trabajo actual y "salida" 
+	 * función init_inputargs con 1, directorio de trabajo actual y "salida" 
 	 * respectivamente.
 	 *
 	*/
-	Options *options = (Options *) malloc(sizeof(Options));
-	init_options(options);
+	Inargs *in = (Inargs *) malloc(sizeof(Inargs));
+	init_inputargs(in);
 
-	parseArgs(options, argc, argv);
+	parseArgs(in, argc, argv);
 
-	createThreads(options->concurrency);
+	List *list = (List *) malloc(sizeof(List));
 
-	explore(options->directory);
+	explore(inargs->directory, list);
+
+	createThreads(inargs->concurrency);
 
 	return 0;
 }
