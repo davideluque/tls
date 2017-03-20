@@ -31,19 +31,27 @@ void init_inputargs(Inargs *in){
 
 void parseArgs(Inargs *in, int argc, char *argv[]){
 	
-	int ch;
-	int index;
+	int ch, index;
+	bool h, nd;
 
+	h = false;
+	nd = false;
 	while( (ch = getopt(argc, argv, "hn:d:")) != -1)
 		switch(ch){
 			case 'h': 
+				h = true;
+				if(nd) usage;
 				help();
 			case 'n':
+				if(h) usage();
 				if (!isdigit(optarg[0])) usage();
 				in->concurrency = atoi(optarg);
+				nd = true;
 				break;
 			case 'd':
+				if(h) usage();
 				strcpy(in->directory, optarg);
+				nd = true;
 				break;
 			case '?':
 				usage();
@@ -58,6 +66,24 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 }
 
 void *printHello(void *tstruct){
+
+	LISTA
+
+	while(list->size){
+		
+		MUTEX_LOCK
+		HILO AGARRA DIRECTORIO DE LA LISTA <> 
+		LO SACA DE LA LISTA
+		MUTEX_UNLOCK
+		HILO LO REVISA
+
+		MUTEX_LOCK
+		AÑADE
+		MUTEX_UNLOCK
+
+		RETORNA
+		REPITE
+	}
 
 	threadstruct *ts;
 
@@ -77,22 +103,22 @@ void createThreads(int NUM_THREADS){
 
 	long *taskids[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
-	int t, rc, i;
+	int hilo, rc, i;
 
-	for (t = 0; t < NUM_THREADS; t++){
+	for (hilo = 0; hilo < NUM_THREADS; t++){
 
 		threadstruct *ts = (threadstruct *) malloc(sizeof(threadstruct));
 		init_threadstruct(ts);
 
-		taskids[t] = (long *) malloc(sizeof(long));
+		taskids[hilo] = (long *) malloc(sizeof(long));
 		
-		*taskids[t] = t;
+		*taskids[hilo] = hilo;
 
-		ts->threadid = taskids[t];
+		ts->threadid = taskids[hilo];
 		
-		printf("Creando hilo %ld\n", t);
+		printf("Creando hilo %ld\n", hilo);
 		
-		rc = pthread_create(&threads[t], NULL, printHello, (void *) ts);
+		rc = pthread_create(&threads[hilo], NULL, ciclodeHilos, (void *) ts);
 		
 		if (rc) perror("Error al crear hilo..\n");
 	}
