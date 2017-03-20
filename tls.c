@@ -57,40 +57,47 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 
 }
 
-void *printHello(void *id){
+void *printHello(void *tstruct){
 
-	long numeroHilo;
+	threadstruct *ts;
 
-	numeroHilo = (long) id;
+	ts = tstruct;
 
-	printf("Hola desde el hilo %ld\n", numeroHilo);
+	printf("Hola desde el hilo %ld\n", ts->threadid);
 
 	//pthread_exit(NULL);
+}
+
+void init_threadstruct(threadstruct *ts){
+	ts->threadid = 0;
+	ts->list = NULL;
 }
 
 void createThreads(int NUM_THREADS){
 
 	long *taskids[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
-	int t, rc;
+	int t, rc, i;
 
 	for (t = 0; t < NUM_THREADS; t++){
+
+		threadstruct *ts = (threadstruct *) malloc(sizeof(threadstruct));
+		init_threadstruct(ts);
+
 		taskids[t] = (long *) malloc(sizeof(long));
+		
 		*taskids[t] = t;
+
+		ts->threadid = taskids[t];
+		
 		printf("Creando hilo %ld\n", t);
-		rc = pthread_create(&threads[t], NULL, printHello, (void *) taskids[t]);
-		if (rc){
-			printf("error al crear hilo..\n");
-		}
+		
+		rc = pthread_create(&threads[t], NULL, printHello, (void *) ts);
+		
+		if (rc) perror("Error al crear hilo..\n");
 	}
 
-	printf("Hola soy el hilo maestro(?)\n");
-
-	int i;
-	for(i=0; i< NUM_THREADS; i++)
-	{
-	    pthread_join(threads[i], NULL);
-	}
+	for(i=0; i< NUM_THREADS; i++) pthread_join(threads[i], NULL);	
 }
 
 void explore(char *directory, List *list){
@@ -126,7 +133,7 @@ int main(int argc, char *argv[])
 {
 
 	/*
-	 * Por defecto los valores de las opciones son inicializados mediante la 
+	 * Por defecto los valores de los argumentos son inicializados mediante la 
 	 * función init_inputargs con 1, directorio de trabajo actual y "salida" 
 	 * respectivamente.
 	 *
@@ -137,6 +144,7 @@ int main(int argc, char *argv[])
 	parseArgs(in, argc, argv);
 
 	List *list = (List *) malloc(sizeof(List));
+	init_list(list);
 
 	explore(in->directory, list);
 

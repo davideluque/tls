@@ -37,12 +37,23 @@ typedef struct element{
  *
 */
 typedef struct list{
-	
 	Element *first;
 	Element *last;
 	int size;
 
 } List;
+
+/*
+ *
+ *
+ *
+ *
+*/
+typedef struct threadstruct{
+	long *threadid;
+	List *list;
+
+} threadstruct;
 
 /*	
  * Ejecuta pager localizado en /usr/bin/ para visualizar el manual del programa
@@ -59,7 +70,7 @@ void usage(void);
 
 /*	
  * Inicializa la estructura que almacenará los argumentos introducidos al invocar 
- * el programa con valores por defecto .
+ * el programa con valores por defecto.
  *
 */
 void init_inputargs(Inargs *in);
@@ -73,7 +84,8 @@ void parseArgs(Inargs *in, int argc, char *argv[]);
 
 /*	
  * Función que ejecuta el hilo principal o maestro para explorar el directorio
- * pasado mediante la línea de comandos.
+ * pasado mediante la línea de comandos añadiendo los directorios encontrados a 
+ * list.
  *	
 */
 void explore(char* directory, List *list);
