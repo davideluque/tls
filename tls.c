@@ -65,15 +65,38 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 
 }
 
-void *printHello(void *tstruct){
+void allocateDir(int numthreads, threadstruct ts){
 
-	LISTA
+	int thread;
 
-	while(list->size){
-		
-		MUTEX_LOCK
-		HILO AGARRA DIRECTORIO DE LA LISTA <> 
-		LO SACA DE LA LISTA
+	while(true){
+
+		// La cola esta vacia? Revisar despues de que todos los hilos esten desocupados
+		for(thread = 0; thread < numthreads; thread++){
+			if(!ts[thread]->status){
+				ts[thread]->status = 1;
+				pthread_mutex_lock(bloqueo);
+				ts[thread]->dir = remove();
+			}
+		}
+	}
+
+}
+
+void *threadmgmt(void *tstruct){
+
+	threadstruct *ts;
+	ts = tstruct;
+
+	// Each created thread waits for dir to be allocated
+	while(true){
+		if(ts->dir){
+			threadexplore(ts->dir)			
+		}
+	}
+
+
+	/*
 		MUTEX_UNLOCK
 		HILO LO REVISA
 
@@ -83,47 +106,37 @@ void *printHello(void *tstruct){
 
 		RETORNA
 		REPITE
-	}
-
-	threadstruct *ts;
-
-	ts = tstruct;
+	}*/
 
 	printf("Hola desde el hilo %ld\n", ts->threadid);
 
 	//pthread_exit(NULL);
 }
 
-void init_threadstruct(threadstruct *ts){
-	ts->threadid = 0;
-	ts->list = NULL;
+void init_threadstruct(threadstruct *ts, int id){
+	ts->threadid = id;
+	ts->status = 0;
 }
 
-void createThreads(int NUM_THREADS){
+void createThreads(int numthreads){
 
-	long *taskids[NUM_THREADS];
-	pthread_t threads[NUM_THREADS];
+	pthread_t threads[numthreads];
+	threadstruct *threadstructs[numthreads];
 	int hilo, rc, i;
 
-	for (hilo = 0; hilo < NUM_THREADS; t++){
+	for (hilo = 0; hilo < numthreads; hilo++){
 
 		threadstruct *ts = (threadstruct *) malloc(sizeof(threadstruct));
-		init_threadstruct(ts);
+		init_threadstruct(ts, hilo);
+		threadstructs[hilo] = ts;
 
-		taskids[hilo] = (long *) malloc(sizeof(long));
-		
-		*taskids[hilo] = hilo;
-
-		ts->threadid = taskids[hilo];
-		
-		printf("Creando hilo %ld\n", hilo);
-		
-		rc = pthread_create(&threads[hilo], NULL, ciclodeHilos, (void *) ts);
-		
-		if (rc) perror("Error al crear hilo..\n");
+		rc = pthread_create(&threads[hilo], NULL, threadmgmt, (void *) threadstructs[hilo]);
+		if (rc) printf("Error al crear hilo. CodError:%d\n", rc);
 	}
 
-	for(i=0; i< NUM_THREADS; i++) pthread_join(threads[i], NULL);	
+	allocateDir(numthreads, threadstructs);
+
+	for(i=0; i< numthreads; i++) pthread_join(threads[i], NULL);	
 }
 
 void explore(char *directory, List *list){

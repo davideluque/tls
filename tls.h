@@ -51,7 +51,7 @@ typedef struct list{
 */
 typedef struct threadstruct{
 	long *threadid;
-	List *list;
+	int status;
 
 } threadstruct;
 

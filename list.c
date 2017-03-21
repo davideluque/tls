@@ -39,6 +39,8 @@ void add(List *l, char* dname){
 	l->size++;
 }
 
+/*
 void remove(List *l){
 	
 }
+*/
