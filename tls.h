@@ -28,8 +28,21 @@ typedef struct element{
 	char* name;
 	struct element *prev;
 	struct element *next;
-
 } Element;
+
+/*
+ *
+ *
+*/
+typedef struct reselement{
+	long id;
+	char *path;
+	int fcount;
+	int bcount;
+	struct reselement *prev;
+	struct reselement *next;
+
+} ResElement;
 
 /*
  * Implementación de una lista. Esta es la lista de directorios a ser explorados
@@ -49,9 +62,29 @@ typedef struct list{
  *
  *
 */
+typedef struct reslist{
+	ResElement *first;
+	ResElement *last;
+	int size;
+
+} ResList;
+
+/*
+ *
+ *
+ *
+ *
+*/
 typedef struct threadstruct{
-	long *threadid;
+	long id;
 	int status;
+	char *dir;
+	List *dirlist;
+	ResList *reslist;
+	pthread_mutex_t dirmutex;
+	pthread_mutex_t resmutex;
+	pthread_mutex_t stamutex;
+	struct threadstruct *tsarray;
 
 } threadstruct;
 
@@ -88,4 +121,4 @@ void parseArgs(Inargs *in, int argc, char *argv[]);
  * list.
  *	
 */
-void explore(char* directory, List *list);
+void explore(char *directory, List *list);
