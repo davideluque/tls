@@ -27,3 +27,10 @@ void init_list(List *l);
  *
 */
 void add(List *l, char *dname);
+
+/*
+ *
+ *
+ *
+*/
+bool empty(List *l);
