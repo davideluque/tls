@@ -7,7 +7,17 @@
  * Universidad Simón Bolívar
  * Caracas, Venezuela
 */
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <stdbool.h>
 #include "list.h"
+#include "tls.h"
 
 void init_element(Element *e, char* dname){
 	e->name = dname;

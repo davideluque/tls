@@ -165,7 +165,6 @@ void threadexplore(threadstruct *ts){
 
 void *threadmgmt(void *tstruct){
 
-	printf("Holaaa entreeee soy el hilo\n");
 	threadstruct *ts;
 	ts = tstruct;
 
