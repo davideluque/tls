@@ -8,6 +8,14 @@
  * Caracas, Venezuela
 */
 
+#include <pthread.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include "list.h"
+
 /*
  * Estructura que almacena los argumentos de ejecución del programa, i.e. número
  * de hilos, directorio y nombre del archivo de salida.
@@ -20,62 +28,12 @@ typedef struct inargs{
 } Inargs;
 
 /*
- * Estructura para la lista de directorios a ser explorados. Almacena el nombre 
- * del directorio, un apuntador al directorio anterior y uno al siguiente.
- *
-*/
-typedef struct element{
-	char* name;
-	struct element *prev;
-	struct element *next;
-} Element;
-
-/*
- *
- *
-*/
-typedef struct reselement{
-	long id;
-	char *path;
-	int fcount;
-	int bcount;
-	struct reselement *prev;
-	struct reselement *next;
-
-} ResElement;
-
-/*
- * Implementación de una lista. Esta es la lista de directorios a ser explorados
- * por los hilos trabajadores. Almacena el primer elemento, el último y su tamaño.
- *
-*/
-typedef struct list{
-	Element *first;
-	Element *last;
-	int size;
-
-} List;
-
-/*
  *
  *
  *
  *
 */
-typedef struct reslist{
-	ResElement *first;
-	ResElement *last;
-	int size;
-
-} ResList;
-
-/*
- *
- *
- *
- *
-*/
-typedef struct threadstruct{
+typedef struct Threadstruct{
 	long id;
 	int status;
 	char *dir;
@@ -84,7 +42,7 @@ typedef struct threadstruct{
 	pthread_mutex_t dirmutex;
 	pthread_mutex_t resmutex;
 	pthread_mutex_t stamutex;
-	struct threadstruct *tsarray;
+	struct Threadstruct *tsarray;
 
 } threadstruct;
 
@@ -122,3 +80,73 @@ void parseArgs(Inargs *in, int argc, char *argv[]);
  *	
 */
 void explore(char *directory, List *list);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void init_threadstruct(threadstruct *ts, long id, List *dirlist, ResList *reslist, 
+						pthread_mutex_t dirmutex, pthread_mutex_t resmutex,
+						pthread_mutex_t stamutex, threadstruct *tsarray[]);
+
+/*
+ *
+ *
+ *
+ *
+*/
+bool working(threadstruct *ts);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void init_reselement(ResElement *r, long id, char *path, int fcount, int bcount);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void threadexplore(threadstruct *ts);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void *threadmgmt(void *tstruct);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void createThreads(int numthreads, List *dirlist, 
+					pthread_mutex_t dirmutex, pthread_t threads[], 
+					threadstruct *tsarray[]);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void allocateDir(int numthreads, List *dirlist, threadstruct *tsarray[], 
+					pthread_mutex_t dirmutex);
+
+/*
+ *
+ *
+ *
+ *
+*/
+void explore(char *directory, List *list);
+

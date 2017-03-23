@@ -7,16 +7,7 @@
  * Universidad Simón Bolívar
  * Caracas, Venezuela
 */
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <stdbool.h>
-#include "list.h"
+
 #include "tls.h"
 
 void init_element(Element *e, char* dname){
@@ -68,15 +59,14 @@ char *get(List *l){
 
 	if(l->size == 0){
 		printf("No hay directorios \n");
-		return;
 	}
+	
 	else {
 		Element *tmp = l->first;
 
 		if(l->size == 1){
 			l->first = NULL;
 			l->last = NULL;
-			printf("Tenia tamaño uno y se supone que esta en tmp %ld\n", tmp->name);
 		}
 
 		else{
