@@ -1,13 +1,12 @@
 /*
- * 			Thread-list
+ * 			Thread-project
  *
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
- *  
+ *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
 */
-
 #include "tls.h"
 
 void help(void){
@@ -24,21 +23,20 @@ void usage(void){
 void init_inputargs(Inargs *in){
 	in->concurrency = 1;
 	getcwd(in->directory, 4096);
-	strcpy(in->out, "salida");
+	strcpy(in->out, "stdout");
 }
 
 void parseArgs(Inargs *in, int argc, char *argv[]){
-	
 	int ch, index;
 	bool h, nd;
 
-	h = false;
-	nd = false;
+	h, nd = false;
+
 	while( (ch = getopt(argc, argv, "hn:d:")) != -1)
 		switch(ch){
-			case 'h': 
+			case 'h':
 				h = true;
-				if(nd) usage;
+				if(nd) usage();
 				help();
 			case 'n':
 				if(h) usage();
@@ -58,217 +56,226 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 		}
 
 	if(optind < argc) strcpy(in->out, argv[optind]);
+}
 
-	return;
+void init_threadstruct(Threadstruct *t, int thnum, List *dirlist, List* infolist,
+												List *idlelist){
+  t->id = 0;
+	t->thnum = thnum;
+	t->has_dirassigned = 0;
+  t->dirlist = dirlist;
+  t->infolist = infolist;
+	t->idlelist = idlelist;
+}
+
+void init_information(Information *i, long id, char *dir, int fcount, int bcount){
+	i->id = id;
+	strcpy(i->path, dir);
+	i->fcount = fcount;
+	i->bcount = bcount;
+}
+
+int onwork(int thnum, List* idlelist){
+	return (thnum != idlelist->size);
+}
+
+void *threadmgmt(void *structure){
+  Threadstruct *t;
+	Node *n;
+	int i;
+
+	t = (Threadstruct *) structure;
+	t->id = pthread_self();
+
+	//printf("Hola soy hilo %ld\n", t->id);
+
+	while(!empty(t->dirlist) || onwork(t->thnum, t->idlelist)){
+		if(t->has_dirassigned){
+			//printf("Me asignaron un directorio %d\n", t->has_dirassigned);
+			//printf("El directorio asignado es %s\n", t->directory);
+      // Thread has an allocated dir
+      explore(t);
+			t->has_dirassigned = 0;
+
+			n = (Node *) malloc(sizeof(Node));
+			init_node(n, t);
+
+			pthread_mutex_lock(&idlemutex);
+			add(t->idlelist, n);
+			pthread_mutex_unlock(&idlemutex);
+    }
+  }
+  //printf("Hola me voy\n");
+	pthread_exit(NULL);
 
 }
 
-void init_threadstruct(threadstruct *ts, long id, List *dirlist, ResList *reslist, 
-						pthread_mutex_t dirmutex, pthread_mutex_t resmutex,
-						pthread_mutex_t stamutex, threadstruct *tsarray[]){
-	ts->id = id;
-	ts->status = 0;
-	ts->dir = NULL;
-	ts->dirlist = dirlist;
-	ts->reslist = reslist;
-	ts->dirmutex = dirmutex;
-	ts->resmutex = resmutex;
-	ts->stamutex = stamutex;
+void createThreads(int numthreads, pthread_t *threads, List *dirlist,
+										List *infolist, List* idlelist){
+  int rc, i;
+	Threadstruct *t;
+	Node *n;
 
-	threadstruct *arreglo;
-	arreglo = *tsarray;
+  for (i = 0; i < numthreads; i++) {
+		//printf("Iteracion %d de la creacion\n", i);
+    t = (Threadstruct *) malloc(sizeof(Threadstruct));
+    init_threadstruct(t, numthreads, dirlist, infolist, idlelist);
 
-	ts->tsarray = arreglo;
+		n = (Node *) (malloc(sizeof(Node)));
+		init_node(n, t);
+
+		//pthread_mutex_lock(&idlemutex);
+		add(idlelist, n);
+		//pthread_mutex_unlock(&idlemutex);
+
+    rc = pthread_create(&threads[i], NULL, threadmgmt, t);
+		//pthread_join(threads[i], NULL);
+
+		if (rc){
+      printf("Error al crear hilo. Código de error:%d\n", rc);
+      exit(-1);
+    }
+  }
 }
 
-bool working(threadstruct *ts){
-	int i, size;
-	bool w;
-
-	size = sizeof(ts->tsarray) / sizeof(ts->tsarray[0]);
-
-	pthread_mutex_lock(&ts->stamutex);
-	w = false; // We assume that all threads are not working 
-	for (i = 0; i < size; i++){
-		if(ts->tsarray[i].status) w = true;
-	}
-	pthread_mutex_unlock(&ts->stamutex);
-
-	return w;
-
-}
-
-void init_reselement(ResElement *r, long id, char *path, int fcount, int bcount){
-	r->id = id;
-	strcpy(r->path, path);
-	r->fcount = fcount;
-	r->bcount = bcount;
-}
-
-void threadexplore(threadstruct *ts){
-
+void explore(Threadstruct *t){
 	DIR *dp;
 	struct dirent *ep;
-	
-	dp = opendir(ts->dir);
+	struct stat statbuffer;
+	char subdir[4096];
+	char file[4096];
+	Node *n;
+	Directory *d;
+	Information *i;
+	int filescount, bytescount;
+
+	filescount = 0;
+	bytescount = 0;
+
+	//printf("Explorará el hilo %ld el directorio %s\n", t->id, t->directory);
+
+	dp = opendir(t->directory);
 
 	if(!dp){
 		perror("No fue posible abrir el directorio\n");
-		return;
 	}
 
-	int filescount, bytescount;
-
-	while((ep = readdir(dp)) != NULL){	
-
+	while((ep = readdir(dp)) != NULL){
 		// Ignore hiden directories
 		if(ep->d_name[0] != '.'){
 
-			struct stat statbuffer;
+			strcpy(file, t->directory);
+			strcat(file, "/");
+			strcat(file, ep->d_name);
 
-			if(stat(ep->d_name, &statbuffer) == -1){
+			if(lstat(file, &statbuffer) == -1){
 				perror("No se pudo obtener la información del directorio\n");
-				exit(-1);
 			}
 
 			if(S_ISDIR(statbuffer.st_mode)){
-				char subdir[1024];
-				strcpy(subdir, ts->dir);
+				n = (Node *) malloc(sizeof(Node));
+				d = (Directory *) malloc(sizeof(Directory));
+
+				strcpy(subdir, t->directory);
 				strcat(subdir, "/");
 				strcat(subdir, ep->d_name);
-				pthread_mutex_lock(&ts->dirmutex);
-				add(ts->dirlist, subdir);
-				pthread_mutex_unlock(&ts->dirmutex);
+
+				//printf("subdirectorio %s\n", subdir);
+				strcpy(d->dir, subdir);
+				init_node(n, d);
+
+				pthread_mutex_unlock(&dirmutex);
+				add(t->dirlist, n);
+				pthread_mutex_unlock(&dirmutex);
+				continue;
 			}
 
 			else{
 				filescount++;
-				bytescount++;
+				bytescount += statbuffer.st_size;
+				continue;
 			}
 		}
 	}
-
-	ResElement *r = (ResElement *) malloc(sizeof(ResElement));
-	init_reselement(r, ts->id, ts->dir, filescount, bytescount);
-
-	pthread_mutex_lock(&ts->resmutex);
-	addRes(ts->reslist, r);
-	pthread_mutex_unlock(&ts->resmutex);
-
-	ts->dir = NULL;
-
-	return;
-
+	//printf("Termino de explorar el hilo\n");
+	n = (Node *) malloc(sizeof(Node));
+	i = (Information *) malloc(sizeof(Information));
+	init_information(i, t->id, t->directory, filescount, bytescount);
+	init_node(n, i);
+	pthread_mutex_lock(&infomutex);
+	add(t->infolist, n);
+	pthread_mutex_unlock(&infomutex);
 }
 
-void *threadmgmt(void *tstruct){
+void allocateDir(Threadstruct *master){
+	Node *c, *d;
+	Threadstruct *t;
+	char dir[4096];
 
-	threadstruct *ts;
-	ts = tstruct;
+	// Master thread will allocate directories while the list isnt empty and there
+	// are threads working
+	while(!empty(master->dirlist) || onwork(master->thnum, master->idlelist)){
+		//printf("Iteracion de la asignacion\n");
+		if(master->idlelist->size != 0 && master->dirlist->size != 0){
 
-	// Each thread waits for the master thread to allocates them dirs. 
-	while(!empty(ts->dirlist) || working(ts)){
-		if(ts->dir){
-			printf("El hilo %ld comenzara a explorar %s\n", ts->id, ts->dir);
-			threadexplore(ts);
-			pthread_mutex_lock(&ts->stamutex);
-			ts->status = 0;
-			pthread_mutex_unlock(&ts->stamutex);
-		}
-		continue;
-	}
+			pthread_mutex_lock(&idlemutex);
+			c = get(master->idlelist);
+			t = (Threadstruct *) c->content;
+			pthread_mutex_unlock(&idlemutex);
 
-	pthread_exit(NULL);
-}
+			//printf("Asignaremos a id:%ld\n", t->id);
 
-void createThreads(int numthreads, List *dirlist, 
-					pthread_mutex_t dirmutex, pthread_t threads[], 
-					threadstruct *tsarray[]){
+			pthread_mutex_lock(&dirmutex);
+			d = get(master->dirlist);
+			t->has_dirassigned = 1;
+			strcpy(t->directory, d->content);
+			pthread_mutex_unlock(&dirmutex);
 
-	pthread_mutex_t resmutex;
-	pthread_mutex_init(&resmutex, NULL);
-
-	pthread_mutex_t stamutex;
-	pthread_mutex_init(&stamutex, NULL);
-
-	int thread, rc, i;
-
-	ResList *reslist = (ResList *) malloc(sizeof(ResList));
-
-	for (thread = 0; thread < numthreads; thread++){
-
-		threadstruct *ts = (threadstruct *) malloc(sizeof(threadstruct));
-		init_threadstruct(ts, thread, dirlist, reslist, dirmutex, resmutex, stamutex, tsarray);
-		tsarray[thread] = ts;
-
-		rc = pthread_create(&threads[thread], NULL, threadmgmt, (void *) tsarray[thread]);
-		if (rc){
-			printf("Error al crear hilo. CodError:%d\n", rc);
-			exit(-1);
 		}
 	}
 }
 
-void allocateDir(int numthreads, List *dirlist, threadstruct *tsarray[], 
-					pthread_mutex_t dirmutex){
+void writeInformation(Threadstruct *master, char *out){
+	FILE *f;
+	Node *first, *next;
+	Information *contenido;
+	bool archivo;
+	char *std;
+	strcpy(std, "stdout");
 
-	int thread;
+	archivo = false;
 
-	// Master thread will allocate directories while the list isnt empty and
-	// there arent threads working
-	while(!empty(dirlist) || working(tsarray[0])){
+		if(strcmp(out,std)){
+		f = fopen(out, "w");
+		archivo = true;
+	}
 
-		for(thread = 0; thread < numthreads; thread++){
+	if(master->infolist->size){
+		first = master->infolist->first;
+		contenido = (Information *) first->content;
 
-			if(!tsarray[thread]->status && !empty(dirlist)){
-
-				pthread_mutex_lock(&tsarray[0]->stamutex);
-				tsarray[thread]->status = 1;
-				pthread_mutex_unlock(&tsarray[0]->stamutex);
-
-				pthread_mutex_lock(&dirmutex);
-				printf("Le voy a asignar un directorio al hilo xs\n");
-				tsarray[thread]->dir = get(dirlist);
-				pthread_mutex_unlock(&dirmutex);
-			}
-			continue;
+		if (archivo){
+			fprintf(f, "%ld %s %d %d\n", contenido->id, contenido->path,
+							contenido->fcount, contenido->bcount);
 		}
-	}
+		else{
+			fprintf(stdout, "%ld %s %d %d\n", contenido->id, contenido->path,
+							contenido->fcount, contenido->bcount);
+		}
 
-}
+		next = first->next;
 
-void explore(char *directory, List *list){
-
-	DIR *dp;
-	struct dirent *ep;
-
-	dp = opendir(directory);
-
-	if(!dp){
-		perror("No fue posible abrir el directorio\n");
-		return;
-	}
-
-	while((ep = readdir(dp)) != NULL){	
-
-		// Ignore hiden directories
-		if(ep->d_name[0] != '.'){
-
-			struct stat statbuffer;
-
-			if(stat(ep->d_name, &statbuffer) == -1){
-				perror("No se pudo obtener la información del directorio\n");
-				exit(-1);
+		while(next){
+			contenido = (Information *) next->content;
+			if (archivo){
+				fprintf(f, "%ld %s %d %d\n", contenido->id, contenido->path,
+								contenido->fcount, contenido->bcount);
 			}
-
-			if(S_ISDIR(statbuffer.st_mode)){
-				//char subdir[1024];
-				//strcpy(subdir, directory);
-				//strcat(subdir, "/");
-				//strcat(subdir, ep->d_name);
-				//strcat(subdir, "/");
-				add(list, ep->d_name);
+			else{
+				fprintf(stdout, "%ld %s %d %d\n", contenido->id, contenido->path,
+									contenido->fcount, contenido->bcount);
 			}
+			next = next->next;
 		}
 	}
 }
