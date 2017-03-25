@@ -33,6 +33,10 @@ int main(int argc, char *argv[]) {
   // Contador de iteracion.
   int i;
 
+<<<<<<< Updated upstream
+=======
+  // Funcion que ayudara a evitar interbloqueos y condiciones de carrera.
+>>>>>>> Stashed changes
   pthread_mutex_init(&idlemutex, NULL);
   pthread_mutex_init(&dirmutex, NULL);
   pthread_mutex_init(&infomutex, NULL);
@@ -65,10 +69,19 @@ int main(int argc, char *argv[]) {
   // torios asignados.
   init_list(idlelist);
 
+<<<<<<< Updated upstream
+=======
+  // Se crea el hilo padre
+>>>>>>> Stashed changes
   masterthread = (Threadstruct *) malloc(sizeof(Threadstruct));
   init_threadstruct(masterthread, in->concurrency, dirlist, infolist, idlelist);
   strcpy(masterthread->directory, in->directory);
 
+<<<<<<< Updated upstream
+=======
+  // Hilo padre explora directorio y los agrega a la lista de directorios pen-
+  // dientes.
+>>>>>>> Stashed changes
   explore(masterthread);
 
   /*
@@ -77,6 +90,7 @@ int main(int argc, char *argv[]) {
 	 * Los hilos quedan esperando que el hilo maestro explore el directorio
 	 * principal.
 	*/
+<<<<<<< Updated upstream
   //printf("Inicio de la creacion\n");
   createThreads(in->concurrency, threads, dirlist, infolist, idlelist);
   //printf("Fin de la creacion\n");
@@ -90,5 +104,18 @@ int main(int argc, char *argv[]) {
   writeInformation(masterthread, in->out);
 
   //printf("Hola me voy soy el papa\n");
+=======
+  createThreads(in->concurrency, threads, dirlist, infolist, idlelist);
+
+  // EL hilo padre asigna directorios a sus hilos hijos.
+  allocateDir(masterthread);
+
+  // Hilo padre recibe inoformacion obtenida de sus hijos.
+  for(i = 0; i < in->concurrency; i++) pthread_join(threads[i], NULL);
+
+  // Hilo padre muestra informacion obtenida.
+  writeInformation(masterthread, in->out);
+
+>>>>>>> Stashed changes
   return 0;
 }
