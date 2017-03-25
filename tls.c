@@ -12,7 +12,9 @@
  * Universidad Simón Bolívar
  * Caracas, Venezuela
  * Marzo, 2017
+ *
 */
+
 #include "tls.h"
 
 void help(void){
@@ -64,17 +66,18 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 	if(optind < argc) strcpy(in->out, argv[optind]);
 }
 
-void init_threadstruct(Threadstruct *t, int thnum, List *dirlist, List* infolist,
-												List *idlelist){
+void init_threadstruct(Threadstruct *t, int thnum, List *dirlist,
+												List* infolist, List *idlelist){
   t->id = 0;
 	t->thnum = thnum;
-	t->has_dirassigned = 0;
+	t->has_dirallocated = 0;
   t->dirlist = dirlist;
   t->infolist = infolist;
 	t->idlelist = idlelist;
 }
 
-void init_information(Information *i, long id, char *dir, int fcount, int bcount){
+void init_information(Information *i, long id, char *dir, int fcount,
+												int bcount){
 	i->id = id;
 	strcpy(i->path, dir);
 	i->fcount = fcount;
@@ -93,15 +96,11 @@ void *threadmgmt(void *structure){
 	t = (Threadstruct *) structure;
 	t->id = pthread_self();
 
-	//printf("Hola soy hilo %ld\n", t->id);
-
 	while(!empty(t->dirlist) || onwork(t->thnum, t->idlelist)){
-		if(t->has_dirassigned){
-			//printf("Me asignaron un directorio %d\n", t->has_dirassigned);
-			//printf("El directorio asignado es %s\n", t->directory);
-      // Thread has an allocated dir
+		if(t->has_dirallocated){
+      // Thread has a dir allocated by master thread
       explore(t);
-			t->has_dirassigned = 0;
+			t->has_dirallocated = 0;
 
 			n = (Node *) malloc(sizeof(Node));
 			init_node(n, t);
@@ -111,31 +110,25 @@ void *threadmgmt(void *structure){
 			pthread_mutex_unlock(&idlemutex);
     }
   }
-  //printf("Hola me voy\n");
 	pthread_exit(NULL);
-
 }
 
-void createThreads(int numthreads, pthread_t *threads, List *dirlist,
-										List *infolist, List* idlelist){
+void createThreads(Threadstruct *master, pthread_t *threads){
   int rc, i;
 	Threadstruct *t;
 	Node *n;
 
-  for (i = 0; i < numthreads; i++) {
-		//printf("Iteracion %d de la creacion\n", i);
+  for (i = 0; i < master->thnum; i++) {
     t = (Threadstruct *) malloc(sizeof(Threadstruct));
-    init_threadstruct(t, numthreads, dirlist, infolist, idlelist);
+    init_threadstruct(t, master->thnum, master->dirlist, master->infolist,
+											master->idlelist);
 
 		n = (Node *) (malloc(sizeof(Node)));
 		init_node(n, t);
 
-		//pthread_mutex_lock(&idlemutex);
-		add(idlelist, n);
-		//pthread_mutex_unlock(&idlemutex);
+		add(master->idlelist, n);
 
     rc = pthread_create(&threads[i], NULL, threadmgmt, t);
-		//pthread_join(threads[i], NULL);
 
 		if (rc){
       printf("Error al crear hilo. Código de error:%d\n", rc);
@@ -176,7 +169,7 @@ void explore(Threadstruct *t){
 			strcat(file, ep->d_name);
 
 			if(lstat(file, &statbuffer) == -1){
-				perror("No se pudo obtener la información del directorio\n");
+				perror("No se pudo obtener la información del archivo\n");
 				return;
 			}
 
@@ -204,11 +197,13 @@ void explore(Threadstruct *t){
 			}
 		}
 	}
-	//printf("Termino de explorar el hilo\n");
+	closedir(dp);
+
 	n = (Node *) malloc(sizeof(Node));
 	i = (Information *) malloc(sizeof(Information));
 	init_information(i, t->id, t->directory, filescount, bytescount);
 	init_node(n, i);
+
 	pthread_mutex_lock(&infomutex);
 	add(t->infolist, n);
 	pthread_mutex_unlock(&infomutex);
@@ -219,22 +214,21 @@ void allocateDir(Threadstruct *master){
 	Threadstruct *t;
 	char dir[PATH_MAX];
 
-	// Master thread will allocate directories while the list isnt empty and there
-	// are threads working
+	// The master thread will allocate directories while the list isnt empty
+	// and threads are working
 	while(!empty(master->dirlist) || onwork(master->thnum, master->idlelist)){
-		//printf("Iteracion de la asignacion\n");
 		if(master->idlelist->size != 0 && master->dirlist->size != 0){
 
+			// Critical region: Master thread takes an idle thread
 			pthread_mutex_lock(&idlemutex);
 			c = get(master->idlelist);
 			t = (Threadstruct *) c->content;
 			pthread_mutex_unlock(&idlemutex);
 
-			//printf("Asignaremos a id:%ld\n", t->id);
-
+			// Critical region: Master thread takes a directory to allocate
 			pthread_mutex_lock(&dirmutex);
 			d = get(master->dirlist);
-			t->has_dirassigned = 1;
+			t->has_dirallocated = 1;
 			strcpy(t->directory, d->content);
 			pthread_mutex_unlock(&dirmutex);
 
@@ -245,43 +239,37 @@ void allocateDir(Threadstruct *master){
 void writeInformation(Threadstruct *master, char *out){
 	FILE *f;
 	Node *first, *next;
-	Information *contenido;
-	bool archivo;
-	char *std;
-	strcpy(std, "stdout");
+	Information *info;
+	bool file_specified;
 
-	archivo = false;
+	file_specified = false;
 
-		if(strcmp(out,std)){
+	if(strcmp(out,"stdout")){
 		f = fopen(out, "w");
-		archivo = true;
+		file_specified = true;
 	}
 
 	if(master->infolist->size){
 		first = master->infolist->first;
-		contenido = (Information *) first->content;
+		info = (Information *) first->content;
 
-		if (archivo){
-			fprintf(f, "%ld %s %d %d\n", contenido->id, contenido->path,
-							contenido->fcount, contenido->bcount);
-		}
-		else{
-			fprintf(stdout, "%ld %s %d %d\n", contenido->id, contenido->path,
-							contenido->fcount, contenido->bcount);
-		}
+		if (file_specified) fprintf(f, "%ld %s %d %d\n", info->id, info->path,
+																	info->fcount, info->bcount);
+
+		else fprintf(stdout, "%ld %s %d %d\n", info->id, info->path,
+									info->fcount, info->bcount);
 
 		next = first->next;
 
 		while(next){
-			contenido = (Information *) next->content;
-			if (archivo){
-				fprintf(f, "%ld %s %d %d\n", contenido->id, contenido->path,
-								contenido->fcount, contenido->bcount);
-			}
-			else{
-				fprintf(stdout, "%ld %s %d %d\n", contenido->id, contenido->path,
-									contenido->fcount, contenido->bcount);
-			}
+			info = (Information *) next->content;
+
+			if (file_specified) fprintf(f, "%ld %s %d %d\n", info->id, info->path,
+																		info->fcount, info->bcount);
+
+			else fprintf(stdout, "%ld %s %d %d\n", info->id, info->path,
+										info->fcount, info->bcount);
+			
 			next = next->next;
 		}
 	}

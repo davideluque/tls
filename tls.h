@@ -1,11 +1,12 @@
 /*
- * 			Thread-list
+ * 			Thread-project
  *
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
  *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
+ * Marzo, 2017.
 */
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,6 +16,7 @@
 #include <pthread.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <limits.h>
 #include "list.h"
 
 pthread_mutex_t idlemutex, dirmutex, infomutex;
