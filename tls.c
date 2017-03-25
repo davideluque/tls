@@ -4,14 +4,19 @@
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
  *
+ * Descripción: Este archivo contiene varias definiciones de las funciones
+ * utilizadas a lo largo del thread-list: análisis de argumentos, inicialización
+ * de estructuras, manejo de hilos, exploración de directorios, asignación y
+ * escritura de salida
+ *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
+ * Marzo, 2017
 */
 #include "tls.h"
 
 void help(void){
-	// Try to execute pager? If not, print?
-	execlp("/usr/bin/pager", "/usr/bin/pager", "help");
+	execlp("pager", "pager", "help");
 }
 
 void usage(void){
@@ -22,7 +27,7 @@ void usage(void){
 
 void init_inputargs(Inargs *in){
 	in->concurrency = 1;
-	getcwd(in->directory, 4096);
+	getcwd(in->directory, PATH_MAX);
 	strcpy(in->out, "stdout");
 }
 
@@ -30,22 +35,20 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 	int ch, index;
 	bool h, nd;
 
-	h, nd = false;
+	h = false;
+	nd = false;
 
 	while( (ch = getopt(argc, argv, "hn:d:")) != -1)
 		switch(ch){
 			case 'h':
 				h = true;
-				if(nd) usage();
-				help();
+				break;
 			case 'n':
-				if(h) usage();
 				if (!isdigit(optarg[0])) usage();
 				in->concurrency = atoi(optarg);
 				nd = true;
 				break;
 			case 'd':
-				if(h) usage();
 				strcpy(in->directory, optarg);
 				nd = true;
 				break;
@@ -54,6 +57,9 @@ void parseArgs(Inargs *in, int argc, char *argv[]){
 			default:
 				usage();
 		}
+
+	if(h && nd) usage();
+	else if (h) help();
 
 	if(optind < argc) strcpy(in->out, argv[optind]);
 }
@@ -142,8 +148,8 @@ void explore(Threadstruct *t){
 	DIR *dp;
 	struct dirent *ep;
 	struct stat statbuffer;
-	char subdir[4096];
-	char file[4096];
+	char subdir[PATH_MAX];
+	char file[PATH_MAX];
 	Node *n;
 	Directory *d;
 	Information *i;
@@ -152,12 +158,13 @@ void explore(Threadstruct *t){
 	filescount = 0;
 	bytescount = 0;
 
-	//printf("Explorará el hilo %ld el directorio %s\n", t->id, t->directory);
+	printf("Hilo %ld explorando %s\n", t->id, t->directory);
 
 	dp = opendir(t->directory);
 
 	if(!dp){
 		perror("No fue posible abrir el directorio\n");
+		return;
 	}
 
 	while((ep = readdir(dp)) != NULL){
@@ -170,6 +177,7 @@ void explore(Threadstruct *t){
 
 			if(lstat(file, &statbuffer) == -1){
 				perror("No se pudo obtener la información del directorio\n");
+				return;
 			}
 
 			if(S_ISDIR(statbuffer.st_mode)){
@@ -180,7 +188,6 @@ void explore(Threadstruct *t){
 				strcat(subdir, "/");
 				strcat(subdir, ep->d_name);
 
-				//printf("subdirectorio %s\n", subdir);
 				strcpy(d->dir, subdir);
 				init_node(n, d);
 
@@ -210,7 +217,7 @@ void explore(Threadstruct *t){
 void allocateDir(Threadstruct *master){
 	Node *c, *d;
 	Threadstruct *t;
-	char dir[4096];
+	char dir[PATH_MAX];
 
 	// Master thread will allocate directories while the list isnt empty and there
 	// are threads working
