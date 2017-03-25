@@ -1,3 +1,15 @@
+##
+ # 			Thread-project
+ #
+ # Autor: David Cabeza <13-10191@usb.ve>
+ # Autor: Fabiola Martínez <13-10838@usb.ve>
+ #
+ # Descripción: Este archivo facilita la compilación del programa tls.
+ #
+ # Universidad Simón Bolívar
+ # Caracas, Venezuela
+##
+
 tls: main.o tls.o list.o
 	gcc main.o tls.o list.o -o tls -lpthread
 
