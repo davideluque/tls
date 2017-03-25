@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <ctype.h>
 #include "list.h"
 
 pthread_mutex_t idlemutex, dirmutex, infomutex;
@@ -53,56 +54,81 @@ typedef struct threadstruct{
 	List *idlelist;
 } Threadstruct;
 
-/*
- * Ejecuta pager para visualizar el manual del programa que contiene
- * información acerca de la sintaxis, descripción de párametros, etc.
+/* 	help: procedimiento que se encarga de mostrar en pantalla un mensaje de ayu-
+* da sobre sintaxis, parametros de entrada y salida.
 */
 void help(void);
 
-/*
- * Se ejecuta cuando el programa es invocado mediante un comando inválido.
+/*	usage: se ejecuta cuando se invoca el programa con un comando inválido.
 */
 void usage(void);
 
-/*
- * Inicializa con valores por defecto la estructura que almacenará los
- * argumentos introducidos al invocar el programa.
+/* 	init_inputarg: procedimiento que se encarga de inicializar los valores intro-
+* 	ducidos por el usuario.
 */
 void init_inputargs(Inargs *in);
 
 /*
- * Analiza la sintaxis de la invocación del programa mediante la línea
- * de comandos.
+/* 	parseArgs: procedimiento que se encarga de verificar la instruccion que desea
+* 	ejecutar el usuario.
 */
 void parseArgs(Inargs *in, int argc, char *argv[]);
 
-/*
- * Inicializa la estructura de los hilos con parámetros y valores por defecto.
+/* 	init_threastruct: procedimiento que se encarga de inicializar los valores co-
+* rrespondientes a los los atributos de un hilo.
+* 	Parametros de entrada:
+* 	- t: apuntador a estructura threadstruct.
+*	- thnum: numeros de hilos creados.
+* 	- dirlist: apuntador a la lista de directorios pendientes.
+*	- infolis: apuntador a la lista que almacena la informacion obtenida por los
+* 	hilos.
+* 	- idlelist: apuntador a la lista de hilos que no tienen trabajo asignado.
 */
 void init_threadstruct(Threadstruct *t, int thnum, List *dirlist,
 												List* infolist, List *idlelist);
 
-/*
- * Verifica dado el número de hilos y la lista de hilos inactivos, si hay
- * hilos trabajando
+/*	init_information: procedimiento que se encarga de inicializar los valores en
+* 	en los que se almacena la informacion obtenida por el hilo.
+*	Parametros de entrada:
+*	- i: apuntador a la estructura information que contendra la informacion ob-
+* 	tenida por el nodo.
+*	- id: identificador del hilo.
+* 	- dir: directorio explorado por el hilo.
+*	- fcount: cantidad de archivos encontrados por el hilos.
+*	- bcount: cantidad de bytes.
+*/
+void init_information(Information *i, long id, char *dir, int fcount, int bcount);
+
+/* 	onwork: procedimiento que verifica si hay hilos trabajando.
+* 	Parametros de entrada:
+*	- thnum: numeros de hilos creados.
+* 	- idlelist: apuntador a la lista de hilos que no tienen trabajo asignado.
 */
 int onwork(int thnum, List* idlelist);
 
-/*
- * Procedimiento ejecutado por los hilos al momento de su creación. Mantiene a
- * los hilos en un ciclo esperando por asignacion de directorios. Al tener uno,
- * son enviados a explorarlo.
+/*	threadmgmt: funcion que sera ejecutada por los hijos, verifica si un hilo
+* 	tiene un directorio asignado para que este inicie a explorar el directorio
+*
 */
 void *threadmgmt(void *structure);
 
-/*
- * Procedimiento ejecutado por el hilo maetsro que se encarga de crear los
- * hilos indicados en los argumentos de invocación del programa.
+/*	explore: procedimiento que se encarga de explorar un directorio.
+* 	Parametros de entrada:
+* 	- t: apuntador a la estructura del hilo.
 */
-void createThreads(Threadstruct *master, pthread_t *threads);
-
 void explore(Threadstruct *t);
 
+/* 	allocateDir: procedimiento que se encarga de asignarle un directorio a un hi-
+* 	lo ociosio, sin trabajo.
+*	Parametros de entrada:
+* 	- t: apuntador a la estructura del hilo.
+*/
 void allocateDir(Threadstruct *master);
 
+/* 	writeInformation: procedimiento que se encarga mostrar la informacion reci-
+* 	bida del hilo padre por sus hijos y mostrarla por defecto en la linea de co-
+*	mando o si el usuario lo desea en un archivo de salida.
+* 	Parametros de entrada:
+* 	- out: nombre del archivo de salida.
+*/
 void writeInformation(Threadstruct *master, char *out);

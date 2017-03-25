@@ -41,7 +41,9 @@ int main(int argc, char *argv[]) {
    * - Añadir hilos a la lista de hilos inactivos (sin directorio asginado)
    * - Añadir directorios a la lista de directorios a explorar
    * - Añadir información encontrada a la lista de información pos-exploración
+   * Evitan las condiciones de carrera.
   */
+
   pthread_mutex_init(&idlemutex, NULL);
   pthread_mutex_init(&dirmutex, NULL);
   pthread_mutex_init(&infomutex, NULL);
@@ -69,10 +71,15 @@ int main(int argc, char *argv[]) {
   // torios asignados.
   init_list(idlelist);
 
+  // Se crea el hilo padre
   masterthread = (Threadstruct *) malloc(sizeof(Threadstruct));
   init_threadstruct(masterthread, in->concurrency, dirlist, infolist, idlelist);
   strcpy(masterthread->directory, in->directory);
 
+  /*
+   * Hilo padre explora directorio y agrega los directorios encontrados a la
+   * lista de directorios pendientes
+  */
   explore(masterthread);
 
   /*
@@ -86,10 +93,13 @@ int main(int argc, char *argv[]) {
 	*/
   createThreads(masterthread, threads);
 
+  // EL hilo padre asigna directorios a sus hilos hijos.
   allocateDir(masterthread);
 
+  // Hilo padre espera por la finalización de hijos.
   for(i = 0; i < in->concurrency; i++) pthread_join(threads[i], NULL);
 
+  // Escribe la información obtenida
   writeInformation(masterthread, in->out);
 
   return 0;
