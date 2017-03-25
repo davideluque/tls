@@ -205,7 +205,7 @@ void createThreads(Threadstruct *master, pthread_t *threads){
 void explore(Threadstruct *t){
 	DIR *dp;
 	struct dirent *ep;
-	structs stat statbuffer;
+	struct stat statbuffer;
 	char subdir[PATH_MAX];
 	char file[PATH_MAX];
 	Node *n;
