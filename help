@@ -12,7 +12,7 @@ DESCRIPTION
 	directorio en el árbol.
 
 OPTIONS
-	-h 		Muestra por pantalla un mensaje de ayuda (sintaxis, descripción de 
+	-h 		Muestra por pantalla un mensaje de ayuda (sintaxis, descripción de
 			parámetros, etc.)
 
 	-n 		Nivel de concurrencia solicitado. Debe ser un entero. Ejemplo: -n 5
