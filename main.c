@@ -4,18 +4,22 @@
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
  *
- * Descripción:
+ * Descripción: Programa principal del thread-list. Esta función siempre es
+ * ejecutada por el hilo maestro. El thread-list explora un directorio con un
+ * número de hilos.
  *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
+ * Marzo, 2017.
+ *
 */
 #include "tls.h"
 
 int main(int argc, char *argv[]) {
   /*
    * Por defecto los valores de los argumentos son inicializados mediante la
-   * función init_inputargs con 1, directorio de trabajo actual y "salida"
-   * respectivamente.
+   * función init_inputargs con 1, directorio de trabajo actual y salida
+   * estándar respectivamente.
   */
   Inargs *in = (Inargs *) malloc(sizeof(Inargs));
   // Lista que contendra los directorios pendientes a explorar.
@@ -26,13 +30,18 @@ int main(int argc, char *argv[]) {
   List *idlelist = (List *) malloc(sizeof(List));
   // Apuntador a los hilos.
   pthread_t *threads;
-  //
-  Threadstruct *threads_structs;
-  //
+  // Estructura del hilo maestro
   Threadstruct *masterthread;
   // Contador de iteracion.
   int i;
 
+  /*
+   * Inicialización de exclusiones mutuas para regiones críticas del programa.
+   * Las regiones críticas son:
+   * - Añadir hilos a la lista de hilos inactivos (sin directorio asginado)
+   * - Añadir directorios a la lista de directorios a explorar
+   * - Añadir información encontrada a la lista de información pos-exploración
+  */
   pthread_mutex_init(&idlemutex, NULL);
   pthread_mutex_init(&dirmutex, NULL);
   pthread_mutex_init(&infomutex, NULL);
@@ -44,15 +53,10 @@ int main(int argc, char *argv[]) {
   // usuario.
   parseArgs(in, argc, argv);
 
-  //chdir(in->directory);
-	getcwd(in->directory, 4096);
+  chdir(in->directory);
+	getcwd(in->directory, PATH_MAX);
 
-  /*
-   * Dos estructuras globales threads y threads_structs. La primera almacena los
-   * hilos, la segunda almacenara las estructuras de los hilos.
-  */
   threads = (pthread_t *) malloc(sizeof(in->concurrency * sizeof(pthread_t)));
-  threads_structs = (Threadstruct *) malloc(sizeof(in->concurrency * sizeof(Threadstruct)));
 
   // Inicializamos la lista donde se almacenaran los directorios a explorar.
   init_list(dirlist);
@@ -72,23 +76,21 @@ int main(int argc, char *argv[]) {
   explore(masterthread);
 
   /*
-	 * Se crearan el numero de hilos indicado en el valor de concurrency.
+	 * El hilo maestro tiene en su estructura la información necesaria para la
+   * creación de hilos, i.e. concurrencia (número de hilos a crear) y los
+   * apuntadores a la lista de directorios, de información encontrada y de
+   * hilos inactivos.
    *
-	 * Los hilos quedan esperando que el hilo maestro explore el directorio
-	 * principal.
+	 * Los hilos creados se mantienen esperando que el hilo maestro les asigne
+   * un directorio para explorar.
 	*/
-  //printf("Inicio de la creacion\n");
-  createThreads(in->concurrency, threads, dirlist, infolist, idlelist);
-  //printf("Fin de la creacion\n");
+  createThreads(masterthread, threads);
 
-  //printf("Comienzo de la asignacion\n");
   allocateDir(masterthread);
 
   for(i = 0; i < in->concurrency; i++) pthread_join(threads[i], NULL);
 
-  printf("salida salida %")
   writeInformation(masterthread, in->out);
 
-  //printf("Hola me voy soy el papa\n");
   return 0;
 }
