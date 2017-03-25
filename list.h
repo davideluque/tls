@@ -1,18 +1,24 @@
 /*
- * 			Thread-list
+ * 			Thread-project
  *
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
  *
+ * Descripción: Cabecera del archivo list.c que contiene las librerías
+ * necesarias, prototipos de estructuras y de funciones.
+ *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
+ * Marzo, 2017.
 */
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 /*
- * Estructura para las listas.
+ * Estructura de nodos para las listas.
  *
 */
 typedef struct node{
@@ -22,12 +28,12 @@ typedef struct node{
 } Node;
 
 typedef struct directory{
-  char dir[4096];
+  char dir[PATH_MAX];
 } Directory;
 
 typedef struct information{
   long id;
-  char path[4096];
+  char path[PATH_MAX];
   int fcount;
   int bcount;
 } Information;
@@ -42,6 +48,8 @@ void init_node(Node *n, void *content);
 
 void init_list(List *l);
 
-bool empty(List *l);
+void add(List *l, Node *n);
 
 Node *get(List *l);
+
+bool empty(List *l);

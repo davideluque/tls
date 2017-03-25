@@ -1,8 +1,11 @@
 /*
- * 			Thread-list
+ * 			Thread-project
  *
  * Autor: David Cabeza <13-10191@usb.ve>
  * Autor: Fabiola Martínez <13-10838@usb.ve>
+ *
+ * Descripción: Implementación de procedimientos y métodos que manejan el uso
+ * de listas en el programa.
  *
  * Universidad Simón Bolívar
  * Caracas, Venezuela
@@ -40,12 +43,9 @@ Node *get(List *l){
 
   Node *tmp;
 
-  if(l->size == 0){
-	   printf("No hay nada\n");
-     return;
- 	}
+  if(l->size == 0) printf("No hay elementos en la lista\n");
 
- 	else {
+  else {
  		tmp = l->first;
 
  		if(l->size == 1){
@@ -69,15 +69,11 @@ Node *get(List *l){
 
  		}
     l->size--;
-    return tmp;
  	}
+  return tmp;
 }
 
 bool empty(List *l){
-  if (l->size == 0){
-    return true;
-  }
-  else {
-    return false;
-  }
+  if (l->size == 0) return true;
+  else return false;
 }
