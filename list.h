@@ -87,13 +87,10 @@ void add(List *l, Node *n);
 *   Parametros de entrada:
 *   - List: lista en la cual se quiere obtener un elemento tipo Node.
 */
-bool empty(List *l);
+Node *get(List *l);
 
 /*  empty: procedimiento que se encarga de verificar si la lista esta vacia.
 *   Parametros de entrada:
 *   - List: lista en la que se verificara si esta llena o vacia.
 */
-
-Node *get(List *l);
-
 bool empty(List *l);
