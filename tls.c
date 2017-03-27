@@ -45,7 +45,7 @@ void init_inputargs(Inargs *in){
 * 	ejecutar el usuario.
 */
 void parseArgs(Inargs *in, int argc, char *argv[]){
-	int ch, index;
+	int ch;
 	bool h, nd;
 
 	h = false;
@@ -207,7 +207,6 @@ void explore(Threadstruct *t){
 	struct dirent *ep;
 	struct stat statbuffer;
 	char subdir[PATH_MAX];
-	char file[PATH_MAX];
 	Node *n;
 	Directory *d;
 	Information *i;
@@ -227,11 +226,11 @@ void explore(Threadstruct *t){
 		// Ignore hiden directories
 		if(ep->d_name[0] != '.'){
 
-			strcpy(file, t->directory);
-			strcat(file, "/");
-			strcat(file, ep->d_name);
+			strcpy(subdir, t->directory);
+			strcat(subdir, "/");
+			strcat(subdir, ep->d_name);
 
-			if(lstat(file, &statbuffer) == -1){
+			if(lstat(subdir, &statbuffer) == -1){
 				perror("No se pudo obtener la información del archivo\n");
 				return;
 			}
@@ -239,10 +238,6 @@ void explore(Threadstruct *t){
 			if(S_ISDIR(statbuffer.st_mode)){
 				n = (Node *) malloc(sizeof(Node));
 				d = (Directory *) malloc(sizeof(Directory));
-
-				strcpy(subdir, t->directory);
-				strcat(subdir, "/");
-				strcat(subdir, ep->d_name);
 
 				strcpy(d->dir, subdir);
 				init_node(n, d);
@@ -280,7 +275,6 @@ void explore(Threadstruct *t){
 void allocateDir(Threadstruct *master){
 	Node *c, *d;
 	Threadstruct *t;
-	char dir[PATH_MAX];
 
 	// Se verifica si hay directorios pendientes por asignar o hay hilos ociosos.
 	while(!empty(master->dirlist) || onwork(master->thnum, master->idlelist)){
@@ -328,10 +322,10 @@ void writeInformation(Threadstruct *master, char *out){
 		first = master->infolist->first;
 		info = (Information *) first->content;
 
-		if (file_specified) fprintf(f, "%ld %s %d %d\n", info->id, info->path,
+		if (file_specified) fprintf(f, "%ld %s %d %lu\n", info->id, info->path,
 																	info->fcount, info->bcount);
 
-		else fprintf(stdout, "%ld %s %d %d\n", info->id, info->path,
+		else fprintf(stdout, "%ld %s %d %lu\n", info->id, info->path,
 									info->fcount, info->bcount);
 
 		next = first->next;
